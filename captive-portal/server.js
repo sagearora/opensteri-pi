@@ -15,7 +15,11 @@ app.get("/", (req, res) => {
             return res.send("<h1>Error fetching Wi-Fi networks</h1>");
         }
 
-        const networks = stdout.split("\n").filter(line => line).map(ssid => `<option value="${ssid}">${ssid}</option>`).join("");
+        const networks = stdout
+            .split("\n")
+            .filter(line => line)
+            .map(ssid => `<option value="${ssid}">${ssid}</option>`)
+            .join("");
 
         res.send(`
             <!DOCTYPE html>
@@ -42,7 +46,10 @@ app.get("/", (req, res) => {
 
 app.post("/submit", (req, res) => {
     const { ssid, password } = req.body;
-    const connectionId = `wifi-connection-${Date.now()}`; // Unique ID for the connection
+    const connectionId = `wifi-connection`; // Unique ID for the connection
+
+    // Prevent multiple responses
+    let responseSent = false;
 
     // Create a temporary connection profile
     const createCmd = `
@@ -53,11 +60,14 @@ app.post("/submit", (req, res) => {
     exec(createCmd, (error, stdout, stderr) => {
         if (error) {
             console.error(`Error creating connection: ${stderr}`);
-            return res.send(`
-                <h1>Error Configuring Wi-Fi</h1>
-                <p>${stderr}</p>
-                <a href="/">Try Again</a>
-            `);
+            if (!responseSent) {
+                responseSent = true;
+                return res.send(`
+                    <h1>Error Configuring Wi-Fi</h1>
+                    <p>${stderr}</p>
+                    <a href="/">Try Again</a>
+                `);
+            }
         }
 
         console.log(`Connection profile created: ${stdout}`);
@@ -67,34 +77,40 @@ app.post("/submit", (req, res) => {
         const child = exec(testCmd);
 
         let timeout = setTimeout(() => {
-            console.error("Connection attempt timed out.");
-            child.kill(); // Terminate the nmcli command
-            exec(`nmcli connection delete "${connectionId}"`); // Clean up the temporary connection
-            return res.send(`
-                <h1>Connection Timed Out</h1>
-                <p>Unable to connect to SSID "${ssid}". Please check the credentials and try again.</p>
-                <a href="/">Back</a>
-            `);
+            if (!responseSent) {
+                console.error("Connection attempt timed out.");
+                responseSent = true;
+                child.kill(); // Terminate the nmcli command
+                exec(`nmcli connection delete "${connectionId}"`); // Clean up the temporary connection
+                res.send(`
+                    <h1>Connection Timed Out</h1>
+                    <p>Unable to connect to SSID "${ssid}". Please check the credentials and try again.</p>
+                    <a href="/">Back</a>
+                `);
+            }
         }, 10000); // 10-second timeout
 
         child.on("exit", (code) => {
-            clearTimeout(timeout); // Clear the timeout if the process completes
-            if (code === 0) {
-                console.log("Connection verified successfully.");
-                res.send(`
-                    <h1>Wi-Fi Configured</h1>
-                    <p>Connected successfully to SSID "${ssid}".</p>
-                `);
-                // Disconnect from the AP after a successful connection
-                exec(`nmcli connection down MyAP`);
-            } else {
-                console.error(`Error activating connection: Exit code ${code}`);
-                exec(`nmcli connection delete "${connectionId}"`); // Clean up the temporary connection
-                res.send(`
-                    <h1>Invalid Wi-Fi Credentials</h1>
-                    <p>Failed to connect to SSID "${ssid}". Please check the credentials and try again.</p>
-                    <a href="/">Back</a>
-                `);
+            if (!responseSent) {
+                clearTimeout(timeout); // Clear the timeout if the process completes
+                responseSent = true; // Ensure only one response is sent
+                if (code === 0) {
+                    console.log("Connection verified successfully.");
+                    res.send(`
+                        <h1>Wi-Fi Configured</h1>
+                        <p>Connected successfully to SSID "${ssid}".</p>
+                    `);
+                    // Disconnect from the AP after a successful connection
+                    exec(`nmcli connection down MyAP`);
+                } else {
+                    console.error(`Error activating connection: Exit code ${code}`);
+                    exec(`nmcli connection delete "${connectionId}"`); // Clean up the temporary connection
+                    res.send(`
+                        <h1>Invalid Wi-Fi Credentials</h1>
+                        <p>Failed to connect to SSID "${ssid}". Please check the credentials and try again.</p>
+                        <a href="/">Back</a>
+                    `);
+                }
             }
         });
     });
