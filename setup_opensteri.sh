@@ -5,7 +5,7 @@ sudo apt update
 sudo apt upgrade -y
 
 # Install necessary packages
-sudo apt install -y network-manager iptables nodejs npm git
+sudo apt install -y network-manager iptables nodejs npm
 
 # Enable and start NetworkManager
 sudo systemctl enable NetworkManager
