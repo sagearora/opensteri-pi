@@ -32,8 +32,7 @@ sudo iptables --wait --table nat --append OUTPUT --protocol tcp --dport 80 --jum
 sudo sh -c "iptables-save > /etc/iptables/rules.v4"
 
 # Clone and set up captive-portal
-git clone https://github.com/sagearora/opensteri-pi.git
-cd opensteri-pi/captive-portal
+cd captive-portal
 
 sudo npm install -g pm2
 npm i
