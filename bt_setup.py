@@ -1,5 +1,4 @@
 import os
-import dbus
 from bluetooth import BluetoothSocket, RFCOMM, advertise_service
 
 def configure_wifi(ssid: str, password: str):
