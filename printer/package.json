@@ -1,0 +1,28 @@
+{
+  "name": "printer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "keywords": [],
+  "author": "Saj Arora <dev@edropin.com> (http://edropin.com/)",
+  "license": "UNLICENSED",
+  "description": "",
+  "scripts": {
+    "start": "node dist/server.js",
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn src/server.ts"
+  },
+  "dependencies": {
+    "base-64": "^1.0.0",
+    "dayjs": "^1.11.7",
+    "express": "^4.18.2",
+    "usb": "^2.14.0"
+  },
+  "devDependencies": {
+    "@types/base-64": "^1.0.2",
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.6.0",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
