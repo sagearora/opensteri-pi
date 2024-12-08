@@ -70,12 +70,15 @@ echo "Setting up the captive portal..."
 cd captive-portal
 sudo npm install -g pm2
 npm i
-pm2 start server.js --name captive-portal
-pm2 save
-pm2 startup
+sudo pm2 start server.js --name captive-portal
+cd ../printer
+npm run build
+sudo pm2 start dist/server.js --name print-server
+sudo pm2 save
+sudo pm2 startup
 
 # Bring up the Access Point
 echo "Bringing up the Access Point..."
 sudo nmcli connection up MyAP
 
-echo "Setup complete. Your Raspberry Pi is now a Wi-Fi Access Point with a captive portal."
+echo "Setup complete. Your Raspberry Pi is now a Wi-Fi Access Point with a captive portal && print server."

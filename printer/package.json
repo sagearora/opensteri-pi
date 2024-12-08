@@ -8,7 +8,7 @@
   "description": "",
   "scripts": {
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "npm i && tsc",
     "dev": "ts-node-dev --respawn src/server.ts"
   },
   "dependencies": {
