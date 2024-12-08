@@ -66,11 +66,12 @@ sudo iptables --wait --table nat --append OUTPUT --protocol tcp --dport 80 --jum
 echo "Saving iptables rules..."
 sudo sh -c "iptables-save > /etc/iptables/rules.v4"
 
+sudo npm install -g pm2
 echo "Setting up the captive portal..."
 cd captive-portal
-sudo npm install -g pm2
-npm i
+npm run build
 sudo pm2 start server.js --name captive-portal
+echo "Setting up the Print Server..."
 cd ../printer
 npm run build
 sudo pm2 start dist/server.js --name print-server
