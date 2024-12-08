@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# opensteri service installer
+#
 
 # Exit on errors
 set -e
@@ -12,49 +15,21 @@ sudo apt upgrade -y
 echo "Installing required packages..."
 sudo apt install -y network-manager iptables nodejs npm
 
-# Enable and start NetworkManager
-echo "Enabling NetworkManager..."
-sudo systemctl enable NetworkManager
-sudo systemctl start NetworkManager
+GIT_REPO="https://github.com/sagearora/opensteri-pi.git"
+INSTALL_DIR="/home/pi/opensteri-pi"
+
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "Cloning repository from $GIT_REPO..."
+    git clone $GIT_REPO $INSTALL_DIR
+else
+    echo "Repository already exists. Pulling latest changes..."
+    cd $INSTALL_DIR
+    git pull
+fi
 
 # Configure Wi-Fi Access Point
-echo "Configuring Wi-Fi Access Point..."
-sudo nmcli connection add type wifi ifname wlan0 con-name MyAP autoconnect yes ssid OpenPrinter
-sudo nmcli connection modify MyAP 802-11-wireless.mode ap ipv4.method shared
-sudo nmcli connection modify MyAP 802-11-wireless.band bg 802-11-wireless.channel 6
-sudo nmcli connection modify MyAP 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "opensteri123"
-sudo nmcli connection modify MyAP ipv4.method shared
-sudo nmcli connection modify MyAP ipv4.addresses 192.168.4.1/24
-sudo nmcli connection modify MyAP ipv4.gateway 192.168.4.1
-
-# Copy and configure LED status script
-echo "Setting up Wi-Fi LED status script..."
-sudo cp ./wifi-led-status.sh /usr/local/bin
-sudo chmod +x /usr/local/bin/wifi-led-status.sh
-
-# Configure LED status service
-echo "Configuring LED status systemd service..."
-SERVICE_FILE="/etc/systemd/system/wifi-led-status.service"
-sudo tee $SERVICE_FILE > /dev/null <<EOL
-[Unit]
-Description=Wi-Fi LED Status Indicator
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/wifi-led-status.sh
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-sudo systemctl daemon-reload
-sudo systemctl enable wifi-led-status.service
-sudo systemctl start wifi-led-status.service
-
-# Restart NetworkManager
-echo "Restarting NetworkManager..."
-sudo systemctl restart NetworkManager
+echo "Install Bluetooth Utility For Wifi"
+curl  https://raw.githubusercontent.com/nksan/Rpi-SetWiFi-viaBluetooth/main/btwifisetInstall.sh | bash
 
 # Configure iptables for port redirection
 echo "Setting up iptables for port redirection..."
@@ -66,20 +41,13 @@ sudo iptables --wait --table nat --append OUTPUT --protocol tcp --dport 80 --jum
 echo "Saving iptables rules..."
 sudo sh -c "iptables-save > /etc/iptables/rules.v4"
 
-sudo npm install -g pm2
-echo "Setting up the captive portal..."
-cd captive-portal
-npm run build
-sudo pm2 start server.js --name captive-portal
 echo "Setting up the Print Server..."
-cd ../printer
-npm run build
-sudo pm2 start dist/server.js --name print-server
+cd "$INSTALL_DIR/printer"
+sudo npm run build
+sudo npm install -g pm2
+sudo pm2 start dist/server.js --name opensteri-print-server
 sudo pm2 save
 sudo pm2 startup
 
-# Bring up the Access Point
-echo "Bringing up the Access Point..."
-sudo nmcli connection up MyAP
-
-echo "Setup complete. Your Raspberry Pi is now a Wi-Fi Access Point with a captive portal && print server."
+echo "Setup complete. Your Raspberry Pi is now a BT Access Point with print server."
+sudo reboot

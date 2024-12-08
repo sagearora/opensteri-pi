@@ -2,15 +2,21 @@ import express from 'express';
 import { checkStatus, printLabels } from './printHandler';
 
 const app = express();
-const port = 8001;
+const port = 8080;
 
 app.use(express.json());
 
-app.get('/printer/status', async (req, res) => {
+app.get('/', (_, res) => {
+    res.json({
+        name: 'Print server',
+    })
+})
+
+app.get('/status', async (req, res) => {
     try {
         const status = await checkStatus();
         res.json({
-            success: true,
+            ready: status.code === '00',
             ...status
         });
     } catch (e: any) {
@@ -22,7 +28,7 @@ app.get('/printer/status', async (req, res) => {
     }
 });
 
-app.post('/printer/print', async (req, res) => {
+app.post('/print', async (req, res) => {
     const { labels } = req.body;
     if (!labels || !Array.isArray(labels)) {
         return res.status(400).json({ error: "Invalid labels format" });
