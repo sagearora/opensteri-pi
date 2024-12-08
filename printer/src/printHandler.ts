@@ -22,6 +22,11 @@ export const printLabels = async (labels: Label[]) => {
     if (!labels.length) {
         return [];
     }
+    const status = await checkStatus(true)
+
+    if (status.code !== '00') { // not ready
+        return []
+    }
 
     const printCommands: string[] = [printerLayout];
 
@@ -46,8 +51,8 @@ export const printLabels = async (labels: Label[]) => {
 
     // Join commands and send to printer
     const command = printCommands.join("\n");
-    await sendCommand(command)
-    if ((await checkStatus(true)).code === '00') {
+    if (await sendCommand(command)) {
+        const status = await checkStatus(true)
         return labelsToPrint
     }
     console.error("Error printing labels");

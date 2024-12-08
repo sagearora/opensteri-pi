@@ -7,59 +7,6 @@ let device: Device | undefined;
 let out_endpoint: OutEndpoint | undefined;
 let in_endpoint: InEndpoint | undefined;
 
-const initDevice = (_device: Device) => {
-    console.log('Init GODEX printer')
-    _device.open()
-    const ifc = _device.interface(0)
-    if (ifc.isKernelDriverActive()) {
-        try {
-            ifc.detachKernelDriver()
-        } catch (e) {
-            console.error('Error detaching kernel driver', e)
-            _device.close()
-            return
-        }
-    }
-    ifc.claim()
-    const outEndpoint = ifc.endpoints.find((e: any) => e.direction === 'out') as OutEndpoint | undefined
-    const inEndpoint = ifc.endpoints.find((endpoint) => endpoint.direction === "in") as InEndpoint | undefined;
-    if (!outEndpoint) {
-        console.error('Failed to get out endpoint for GODEX printer')
-    }
-    if (!inEndpoint) {
-        console.error("No IN endpoint found.");
-    }
-
-    if (!outEndpoint && !inEndpoint) {
-        ifc.release()
-        _device.close()
-    }
-
-    out_endpoint = outEndpoint
-    in_endpoint = inEndpoint
-    device = _device
-}
-
-
-usb.on('attach', (d: Device) => {
-    if (d.deviceDescriptor.idVendor === PRINTER_VENDOR_ID && d.deviceDescriptor.idProduct === PRINTER_PRODUCT_ID) {
-        initDevice(d)
-    }
-})
-
-usb.on('detach', () => {
-    const _device = findByIds(PRINTER_VENDOR_ID, PRINTER_PRODUCT_ID)
-    if (!_device) {
-        device = undefined
-        out_endpoint = undefined
-    }
-})
-
-const connected = findByIds(PRINTER_VENDOR_ID, PRINTER_PRODUCT_ID)
-if (connected) {
-    initDevice(connected)
-}
-
 let last_status: string|undefined;
 
 const statusDescriptions: Record<string, string> = {
@@ -90,6 +37,7 @@ const statusDescriptions: Record<string, string> = {
 const getStatusMessage = (statusCode: string): string => {
     return statusDescriptions[statusCode] || "Unknown status code.";
 };
+
 
 export const sendCommand = (command: string) => {
     return new Promise((res, rej) => {
@@ -137,7 +85,6 @@ const readStatus = async () => {
     })
 };
 
-
 export const isPrinterConnected = async (force_check?: boolean) => {
     if (last_status === '00' && !force_check){
         return {
@@ -154,3 +101,62 @@ export const isPrinterConnected = async (force_check?: boolean) => {
     last_status = result.code
     return result
 }
+
+const initDevice = (_device: Device) => {
+    console.log('Init GODEX printer')
+    _device.open()
+    const ifc = _device.interface(0)
+    if (ifc.isKernelDriverActive()) {
+        try {
+            ifc.detachKernelDriver()
+        } catch (e) {
+            console.error('Error detaching kernel driver', e)
+            _device.close()
+            return
+        }
+    }
+    ifc.claim()
+    const outEndpoint = ifc.endpoints.find((e: any) => e.direction === 'out') as OutEndpoint | undefined
+    const inEndpoint = ifc.endpoints.find((endpoint) => endpoint.direction === "in") as InEndpoint | undefined;
+    if (!outEndpoint) {
+        console.error('Failed to get out endpoint for GODEX printer')
+    }
+    if (!inEndpoint) {
+        console.error("No IN endpoint found.");
+    }
+
+    if (!outEndpoint && !inEndpoint) {
+        ifc.release()
+        _device.close()
+    }
+
+    out_endpoint = outEndpoint
+    in_endpoint = inEndpoint
+    device = _device
+    isPrinterConnected(true)
+}
+
+
+usb.on('attach', (d: Device) => {
+    if (d.deviceDescriptor.idVendor === PRINTER_VENDOR_ID && d.deviceDescriptor.idProduct === PRINTER_PRODUCT_ID) {
+        initDevice(d)
+    }
+})
+
+usb.on('detach', () => {
+    const _device = findByIds(PRINTER_VENDOR_ID, PRINTER_PRODUCT_ID)
+    if (!_device) {
+        device = undefined
+        out_endpoint = undefined
+    }
+})
+
+const connected = findByIds(PRINTER_VENDOR_ID, PRINTER_PRODUCT_ID)
+if (connected) {
+    initDevice(connected)
+}
+
+
+
+
+
