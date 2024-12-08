@@ -60,6 +60,8 @@ if (connected) {
     initDevice(connected)
 }
 
+let last_status: string|undefined;
+
 const statusDescriptions: Record<string, string> = {
     "00": "Printer is ready.",
     "01": "Media empty or media jam detected.",
@@ -136,11 +138,19 @@ const readStatus = async () => {
 };
 
 
-export const isPrinterConnected = async () => {
+export const isPrinterConnected = async (force_check?: boolean) => {
+    if (last_status === '00' && !force_check){
+        return {
+            code: last_status,
+            message: getStatusMessage(last_status),
+        }
+    }
     // Enable immediate response mode
     await sendCommand('^XSET,IMMEDIATE,1\n');
 
     // Query printer status
     await sendCommand('~S,CHECK\n');
-    return readStatus();
+    const result = await readStatus();
+    last_status = result.code
+    return result
 }

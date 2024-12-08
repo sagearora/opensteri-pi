@@ -16,7 +16,8 @@ app.get('/', (_, res) => {
 
 app.get('/status', async (req, res) => {
     try {
-        const status = await checkStatus();
+        const force_check = req.query.force_check === '1'
+        const status = await checkStatus(force_check);
         res.json({
             ready: status.code === '00',
             ...status
