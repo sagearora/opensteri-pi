@@ -16,6 +16,9 @@ network={{
     os.system("sudo wpa_cli -i wlan0 reconfigure")
     print(f"Configured Wi-Fi for SSID: {ssid}")
 
+
+SPP_UUID = "00001101-0000-1000-8000-00805F9B34FB"  # Serial Port Profile UUID
+
 def handle_bluetooth_connection():
     """Set up a Bluetooth socket and handle incoming connections."""
     server_sock = BluetoothSocket(RFCOMM)
@@ -25,8 +28,9 @@ def handle_bluetooth_connection():
     advertise_service(
         server_sock,
         "WiFiSetupService",
-        service_classes=[RFCOMM],
-        profiles=[RFCOMM],
+        service_id=SPP_UUID,
+        service_classes=[SPP_UUID],  # Valid UUID for the service
+        profiles=[RFCOMM]
     )
 
     print("Waiting for Bluetooth connection...")
@@ -51,6 +55,6 @@ def handle_bluetooth_connection():
     finally:
         client_sock.close()
         server_sock.close()
-
+        
 if __name__ == "__main__":
     handle_bluetooth_connection()
