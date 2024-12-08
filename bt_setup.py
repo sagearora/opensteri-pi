@@ -30,7 +30,7 @@ def handle_bluetooth_connection():
         "WiFiSetupService",
         service_id=SPP_UUID,
         service_classes=[SPP_UUID],  # Valid UUID for the service
-        profiles=[RFCOMM]
+        profiles=[(0x0003, 0x0100)]  # RFCOMM profile with version
     )
 
     print("Waiting for Bluetooth connection...")
